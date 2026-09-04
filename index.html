@@ -39,7 +39,7 @@
         .user-info { font-size: 15px; font-weight: bold; }
         .btn-logout { padding: 6px 12px; background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
 
-        /* 分頁列 (第三頁與第四頁切換) */
+        /* 1. 修改頁籤名稱 */
         .tab-bar { display: flex; border-bottom: 2px solid #e2e8f0; margin-bottom: 20px; }
         .tab-item { flex: 1; text-align: center; padding: 12px; font-weight: bold; color: #64748b; cursor: pointer; font-size: 15px; position: relative; }
         .tab-item.active { color: #2563eb; }
@@ -51,7 +51,10 @@
         .student-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font-size: 18px; font-weight: bold; }
         .seat-badge { width: 28px; height: 28px; background: #dbeafe; color: #1e40af; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
         .missing-list { list-style: none; padding: 0; margin: 0; }
-        .missing-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-top: 1px solid #f1f5f9; font-size: 15px; }
+        
+        /* 2. 讓總覽項目的 hover 特效與點擊指標更明顯 */
+        .missing-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 8px; border-top: 1px solid #f1f5f9; font-size: 15px; cursor: pointer; border-radius: 6px; transition: background 0.15s; }
+        .missing-item:hover { background: #f8fafc; }
         .missing-info { display: flex; align-items: center; gap: 6px; color: #b91c1c; font-weight: 500; }
         .registrar-tag { font-size: 12px; color: #94a3b8; background: #f8fafc; padding: 3px 8px; border-radius: 4px; border: 1px solid #f1f5f9; }
 
@@ -73,7 +76,7 @@
 
 <div class="container">
 
-    <!-- ================= 📍 第一頁：選擇班級 + 匯入名單 ================= -->
+    <!-- 第一頁：選擇班級 + 匯入名單 -->
     <div id="page1" class="card">
         <div class="page-title">🏫 步驟 1：請選擇班級</div>
         
@@ -85,7 +88,7 @@
         <button class="btn-upload" id="openImportModalBtn">📥 匯入新班級 Excel 學生名單</button>
     </div>
 
-    <!-- ================= 📍 第二頁：登入姓名與密碼 ================= -->
+    <!-- 第二頁：登入姓名與密碼 -->
     <div id="page2" class="card" style="display: none;">
         <div class="page-title">🔐 步驟 2：使用者登入</div>
         
@@ -109,7 +112,7 @@
         <button class="btn-secondary" id="backToPage1Btn">↺ 重新選擇班級</button>
     </div>
 
-    <!-- ================= 📍 儀表板：包含第三頁與第四頁 ================= -->
+    <!-- 儀表板：包含作業登記與缺交總表 -->
     <div id="dashboard" style="display: none;">
         
         <!-- 頂部資訊欄 -->
@@ -121,13 +124,13 @@
             <button class="btn-logout" id="logoutBtn">登出 / 切換</button>
         </div>
 
-        <!-- 頁籤導航：第三頁與第四頁切換 -->
+        <!-- 1. 更新頁籤名稱 -->
         <div class="tab-bar">
-            <div class="tab-item" id="tab3Btn">✏️ 第三頁：作業登記模式</div>
-            <div class="tab-item active" id="tab4Btn">📚 第四頁：缺交作業總表</div>
+            <div class="tab-item" id="tab3Btn">✏️ 作業登記模式</div>
+            <div class="tab-item active" id="tab4Btn">📚 缺交作業總表</div>
         </div>
 
-        <!-- ================= 📍 第三頁：作業登記模式 ================= -->
+        <!-- 作業登記模式 -->
         <div id="page3Content" style="display: none;">
             <div class="card">
                 <div class="section-title">📂 作業項目管理</div>
@@ -149,7 +152,7 @@
             </div>
         </div>
 
-        <!-- ================= 📍 第四頁：缺交作業總表 ================= -->
+        <!-- 缺交作業總表 -->
         <div id="page4Content">
             <div class="section-title">📋 學生未完成清單</div>
             <div id="studentMissingContainer">
@@ -166,7 +169,7 @@
         <h3 style="margin-top:0; color:#d97706;">📥 匯入 Excel 學生名單</h3>
         <p style="font-size:13px; color:#666; line-height:1.5;">
             請確保 Excel 第一列欄位名稱精準包含：<br>
-            <strong>班級</strong>、<strong>座號</strong>、<strong>姓名</strong>、<strong>密碼</strong> (請填寫身分證末六碼)
+            <strong>班級</strong>、<strong>座號</strong>、<strong>姓名</strong>、<strong>密碼</strong> (可填身分證末六碼)
         </p>
         
         <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="width:100%; margin:15px 0;">
@@ -195,7 +198,7 @@ const firebaseConfig = {
   measurementId: "G-SRSMVT5SE0"
 };
 
-    const MENTOR_PIN = "0202"; // 導師預設密碼
+    const MENTOR_PIN = "8888"; // 導師預設密碼
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
@@ -207,12 +210,22 @@ const firebaseConfig = {
     let currentStudents = [];
     let studentStates = {};
 
-    // 頁面初始化：先讀取第一頁的班級按鈕
+    // 格式化身分證末六碼或數字密碼的輔助函數
+    function formatPassword(rawPwd) {
+        if (!rawPwd) return "";
+        let pwd = String(rawPwd).trim();
+        if (pwd.endsWith('.0')) pwd = pwd.slice(0, -2); // 清除 Excel float .0
+        if (/^\d+$/.test(pwd) && pwd.length < 6) {
+            pwd = pwd.padStart(6, '0'); // 自動補齊開頭被刪掉的 0
+        }
+        return pwd;
+    }
+
+    // 初始化：載入班級按鈕
     window.addEventListener('DOMContentLoaded', async () => {
         await loadClassButtons();
     });
 
-    // ================= 📍 第一頁邏輯 (選擇班級 + 匯入) =================
     async function loadClassButtons() {
         const container = document.getElementById('classButtonsContainer');
         const snap = await getDocs(collection(db, "students"));
@@ -244,7 +257,7 @@ const firebaseConfig = {
     document.getElementById('openImportModalBtn').onclick = () => importModal.style.display = 'flex';
     document.getElementById('closeImportModalBtn').onclick = () => importModal.style.display = 'none';
 
-    // 執行 Excel 匯入
+    // 執行 Excel 匯入 (自動修正前導 0 與小數點)
     document.getElementById('startImportBtn').onclick = async () => {
         const fileInput = document.getElementById('excelFileInput');
         const statusText = document.getElementById('importStatusText');
@@ -260,7 +273,7 @@ const firebaseConfig = {
             try {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
-                const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+                const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { raw: false });
 
                 const batch = writeBatch(db);
                 let count = 0;
@@ -269,7 +282,10 @@ const firebaseConfig = {
                     const className = String(row["班級"] || "").trim();
                     const seat = String(row["座號"] || "").trim();
                     const name = String(row["姓名"] || "").trim();
-                    const pwd = String(row["密碼"] || "").trim();
+                    
+                    // 支援「密碼」或「身分證末六碼」欄位標題
+                    const rawPwd = row["密碼"] || row["身分證末六碼"] || row["身分證號碼"] || "";
+                    const pwd = formatPassword(rawPwd);
 
                     if (className && seat && name && pwd) {
                         const docId = `${className}_${seat.padStart(2, '0')}`;
@@ -285,26 +301,26 @@ const firebaseConfig = {
 
                 await batch.commit();
                 statusText.style.color = "green";
-                statusText.innerText = `🎉 成功匯入 ${count} 筆學生名單！`;
+                statusText.innerText = `🎉 成功匯入 ${count} 筆學生名單與密碼！`;
                 setTimeout(() => {
                     importModal.style.display = 'none';
                     loadClassButtons();
                 }, 1200);
 
             } catch (err) {
+                console.error(err);
                 statusText.style.color = "red";
-                statusText.innerText = "❌ 匯入失敗，請確認標題列包含「班級、座號、姓名、密碼」。";
+                statusText.innerText = "❌ 匯入失敗，請確認欄位格式！";
             }
         };
         reader.readAsArrayBuffer(file);
     };
 
-    // ================= 📍 第二頁邏輯 (選取班級後進入登入頁) =================
+    // 選擇班級後進入第二頁
     async function selectClassAndGoToPage2(className) {
         currentClass = className;
         document.getElementById('displaySelectedClass').innerText = `${currentClass} 班`;
 
-        // 載入該班級的學生至下拉選單
         const userSelect = document.getElementById('userSelect');
         userSelect.innerHTML = '<option value="mentor">👑 導師</option>';
 
@@ -321,7 +337,6 @@ const firebaseConfig = {
             userSelect.appendChild(opt);
         });
 
-        // 頁面切換：第一頁 ➔ 第二頁
         document.getElementById('page1').style.display = 'none';
         document.getElementById('page2').style.display = 'block';
     }
@@ -332,10 +347,10 @@ const firebaseConfig = {
         document.getElementById('loginPasswordInput').value = '';
     };
 
-    // 登入驗證 ➔ 進入第三/四頁
+    // 登入驗證
     document.getElementById('loginBtn').onclick = () => {
         const selectedValue = document.getElementById('userSelect').value;
-        const password = document.getElementById('loginPasswordInput').value.trim();
+        const password = formatPassword(document.getElementById('loginPasswordInput').value);
 
         if (selectedValue === "mentor") {
             if (password === MENTOR_PIN) {
@@ -348,12 +363,13 @@ const firebaseConfig = {
         } else {
             const student = currentStudents.find(s => String(s.seat) === String(selectedValue));
             if (student) {
-                if (student.password && String(student.password) === password) {
+                const dbPwd = formatPassword(student.password);
+                if (dbPwd && dbPwd === password) {
                     currentUser = student.name;
                     isMentor = false;
                     enterDashboard();
                 } else {
-                    alert(`❌ 密碼錯誤！請輸入 ${student.name} 的身分證末六碼。`);
+                    alert(`❌ 密碼錯誤！請確認身分證末六碼（如開頭為0請包含0）。`);
                 }
             }
         }
@@ -366,7 +382,6 @@ const firebaseConfig = {
         document.getElementById('headerClassText').innerText = `${currentClass} 班`;
         document.getElementById('headerUserText').innerText = currentUser;
 
-        // 預設開展第四頁（缺交總表）
         switchToPage4();
     }
 
@@ -377,21 +392,22 @@ const firebaseConfig = {
         loadClassButtons();
     };
 
-    // ================= 📍 第三頁與第四頁切換邏輯 =================
+    // 頁籤切換
     const tab3Btn = document.getElementById('tab3Btn');
     const tab4Btn = document.getElementById('tab4Btn');
     const page3Content = document.getElementById('page3Content');
     const page4Content = document.getElementById('page4Content');
 
-    tab3Btn.onclick = () => {
+    tab3Btn.onclick = switchToPage3;
+    tab4Btn.onclick = switchToPage4;
+
+    function switchToPage3() {
         tab3Btn.className = 'tab-item active';
         tab4Btn.className = 'tab-item';
         page3Content.style.display = 'block';
         page4Content.style.display = 'none';
         loadHomeworkBars();
-    };
-
-    tab4Btn.onclick = switchToPage4;
+    }
 
     function switchToPage4() {
         tab4Btn.className = 'tab-item active';
@@ -401,7 +417,13 @@ const firebaseConfig = {
         loadSummaryList();
     }
 
-    // ================= 📍 第三頁：作業登記 =================
+    // 2. 點擊缺交項目直接跳轉編輯的全域函數
+    window.jumpToEditHw = (hwName) => {
+        switchToPage3();
+        window.selectHw(hwName);
+    };
+
+    // 作業登記
     async function loadHomeworkBars() {
         const container = document.getElementById('hwBarsContainer');
         const q = query(collection(db, "assignments"), where("class", "==", currentClass));
@@ -514,7 +536,7 @@ const firebaseConfig = {
         document.getElementById('markingArea').style.display = 'none';
     };
 
-    // ================= 📍 第四頁：缺交作業總表 =================
+    // 2. 缺交總表渲染：讓條目可點擊跳轉
     async function loadSummaryList() {
         const container = document.getElementById('studentMissingContainer');
         container.innerHTML = '<div style="color:#94a3b8; text-align:center;">資料載入中...</div>';
@@ -547,10 +569,10 @@ const firebaseConfig = {
                     const icon = item.status === 'not_submitted' ? '❌' : '⚠️';
                     const statusLabel = item.status === 'not_submitted' ? '未交' : '有缺漏';
                     return `
-                        <li class="missing-item">
+                        <li class="missing-item" onclick="window.jumpToEditHw('${item.hwName}')" title="點擊跳轉編輯此作業">
                             <div class="missing-info">
                                 <span>${icon}</span>
-                                <span>[${item.dateStr || '2026-09-04'}] ${item.hwName} (${statusLabel})</span>
+                                <span>[${item.dateStr || '2026-09-04'}] <strong>${item.hwName}</strong> (${statusLabel}) ✏️</span>
                             </div>
                             <span class="registrar-tag">登記人: ${item.registeredBy || '導師'}</span>
                         </li>
