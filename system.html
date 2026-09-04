@@ -5,125 +5,153 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>國文科作業管理系統</title>
     
-    <!-- 5. 網站圖示 (Favicon) 設定：圖片名稱請命名為 favicon.png 並上傳至 GitHub 根目錄 -->
+    <!-- 網站圖示 Favicon -->
     <link rel="icon" href="favicon.png" type="image/png">
     
     <style>
-        body { font-family: 'Segoe UI', Microsoft JhengHei, sans-serif; background: #f4f6f8; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 900px; margin: 0 auto; }
-        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 20px; }
-        h2, h3 { color: #2c3e50; margin-top: 0; }
+        body { font-family: 'Segoe UI', Microsoft JhengHei, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 950px; margin: 0 auto; }
         
-        /* 步驟一：選擇班級卡片 */
-        .step-card { text-align: center; padding: 40px 20px; }
-        .class-select-group { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
+        /* 頂部班級列 */
+        .header-bar { background: #1a73e8; color: white; padding: 15px 20px; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center; }
+        .header-bar h2 { margin: 0; font-size: 20px; }
         
-        /* 輸入框與按鈕 */
-        input[type="text"] { padding: 10px 14px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; }
-        button { padding: 10px 20px; background: #1a73e8; color: white; border: none; border-radius: 6px; font-size: 15px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        /* 分頁按鈕列 */
+        .tab-bar { display: flex; background: #e0e0e0; border-bottom: 2px solid #ccc; }
+        .tab-btn { flex: 1; padding: 14px; text-align: center; background: none; border: none; font-size: 16px; font-weight: bold; color: #555; cursor: pointer; transition: 0.2s; }
+        .tab-btn.active { background: white; color: #1a73e8; border-bottom: 4px solid #1a73e8; }
+        
+        /* 卡片容器 */
+        .card { background: white; padding: 25px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .card-standalone { border-radius: 10px; }
+        h3 { color: #2c3e50; margin-top: 0; }
+        
+        /* 按鈕與輸入框 */
+        input[type="text"] { padding: 9px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; }
+        button { padding: 9px 16px; background: #1a73e8; color: white; border: none; border-radius: 6px; font-size: 14px; cursor: pointer; font-weight: bold; }
         button:hover { background: #1557b0; }
         .btn-danger { background: #d93025; }
         .btn-danger:hover { background: #b31d14; }
-        .btn-secondary { background: #5f6368; }
-        .btn-secondary:hover { background: #474a4d; }
         .btn-success { background: #34a853; }
         .btn-success:hover { background: #2d8e47; }
+        .btn-secondary { background: #5f6368; }
+        .btn-secondary:hover { background: #474a4d; }
 
-        /* 作業項目清單 */
-        .hw-list { list-style: none; padding: 0; margin: 15px 0; }
-        .hw-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; background: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 8px; margin-bottom: 8px; }
-        .hw-info { display: flex; align-items: center; gap: 12px; }
-        .hw-date { font-size: 13px; color: #666; background: #e8eaed; padding: 3px 8px; border-radius: 4px; }
+        /* 作業管理區 */
+        .hw-chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 15px 0; }
+        .hw-chip { background: #f1f3f4; border: 1px solid #dadce0; padding: 8px 14px; border-radius: 20px; display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: bold; }
+        .hw-chip.active { background: #e8f0fe; border-color: #1a73e8; color: #1a73e8; }
+        .hw-chip .del-btn { color: #d93025; font-weight: bold; padding: 2px 6px; border-radius: 50%; font-size: 12px; }
+        .hw-chip .del-btn:hover { background: #fce8e6; }
 
-        /* 學生點擊網格 (按鈕式登記) */
+        /* 學生卡片點擊網格 */
         .student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; margin-top: 15px; }
-        .student-card { padding: 15px 10px; border-radius: 8px; border: 2px solid #ccc; text-align: center; cursor: pointer; user-select: none; transition: all 0.15s ease; }
-        .student-card:active { transform: scale(0.96); }
+        .student-card { padding: 15px 10px; border-radius: 8px; border: 2px solid #ccc; text-align: center; cursor: pointer; user-select: none; transition: transform 0.1s; }
+        .student-card:active { transform: scale(0.95); }
         .student-seat { font-size: 13px; opacity: 0.8; }
-        .student-name { font-size: 18px; font-weight: bold; margin: 4px 0; }
+        .student-name { font-size: 17px; font-weight: bold; margin: 4px 0; }
         .student-status { font-size: 12px; font-weight: bold; border-radius: 4px; padding: 2px 6px; display: inline-block; }
 
-        /* 狀態顏色 (預設未交/已交/缺漏) */
+        /* 三種狀態顏色 */
         .status-not_submitted { background: #fce8e6; border-color: #ea4335; color: #c5221f; }
         .status-submitted { background: #e6f4ea; border-color: #34a853; color: #137333; }
         .status-incomplete { background: #fef7e0; border-color: #fbbc05; color: #b06000; }
 
-        /* 未完成清單標籤 */
-        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 13px; font-weight: bold; margin: 2px; }
-        .badge-red { background: #fce8e6; color: #d93025; }
-        .badge-yellow { background: #fef7e0; color: #b06000; }
+        /* 總覽表格與可點擊標籤 */
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #e0e0e0; padding: 10px; text-text-align: center; }
+        th, td { border: 1px solid #e0e0e0; padding: 12px; text-align: center; }
         th { background: #f8f9fa; }
+        .clickable-badge { display: inline-block; padding: 5px 10px; border-radius: 15px; font-size: 13px; font-weight: bold; margin: 3px; cursor: pointer; transition: 0.2s; }
+        .clickable-badge:hover { transform: scale(1.05); filter: brightness(0.95); }
+        .badge-red { background: #fce8e6; color: #d93025; border: 1px solid #fad2cf; }
+        .badge-yellow { background: #fef7e0; color: #b06000; border: 1px solid #feefc3; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    
-    <!-- 步驟 1：選擇班級畫面 -->
-    <div id="step1View" class="card step-card">
-        <h2>🏫 歡迎使用國文科作業管理系統</h2>
-        <p style="color: #666;">請輸入您要管理的班級以進入控制台：</p>
-        <div class="class-select-group">
-            <input type="text" id="targetClassInput" placeholder="例如: 802" style="width: 150px; text-align: center;">
-            <button id="enterClassBtn">進入班級控制台 👉</button>
+
+    <!-- 步驟 1: 選擇班級 (如果已選過，系統會自動跳過) -->
+    <div id="classSelectView" class="card card-standalone" style="text-align: center; padding: 40px;">
+        <h2>🏫 選擇要管理的班級</h2>
+        <p style="color: #666;">系統會自動記憶您選擇的班級，下次無須再輸入：</p>
+        <div style="margin-top: 20px;">
+            <input type="text" id="classInput" placeholder="例如: 802" style="width: 150px; text-align: center;">
+            <button id="enterClassBtn">進入系統 👉</button>
         </div>
     </div>
 
-    <!-- 步驟 2：班級作業控制台 (預設隱藏) -->
-    <div id="step2View" style="display: none;">
+    <!-- 步驟 2: 主控制台 (含有兩個分頁) -->
+    <div id="mainDashboardView" style="display: none;">
         
-        <!-- 頂部資訊欄 -->
-        <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <h2 style="margin: 0;">📍 當前班級：<span id="displayClassName" style="color: #1a73e8;"></span></h2>
-            </div>
-            <button class="btn-secondary" id="switchClassBtn">↺ 切換班級</button>
+        <!-- 頂部資訊列 -->
+        <div class="header-bar">
+            <h2>📍 當前班級：<span id="currentClassText"></span></h2>
+            <button class="btn-secondary" id="changeClassBtn" style="background: rgba(255,255,255,0.2);">↺ 切換班級</button>
         </div>
 
-        <!-- 3. 作業項目管理 (新增 / 刪除 / 顯示日期) -->
-        <div class="card">
-            <h3>📂 作業項目管理</h3>
-            <div style="display: flex; gap: 10px;">
-                <input type="text" id="newHwInput" placeholder="輸入新作業名稱 (例如: 第一課習作)" style="flex: 1;">
-                <button id="addHwBtn">＋ 新增作業項目</button>
-            </div>
-
-            <ul class="hw-list" id="hwListContainer">
-                <!-- 動態載入作業列表 -->
-            </ul>
+        <!-- 2. 分頁標籤 -->
+        <div class="tab-bar">
+            <button class="tab-btn active" id="tab1Btn">📝 登記作業</button>
+            <button class="tab-btn" id="tab2Btn">📊 未完成總覽名單</button>
         </div>
 
-        <!-- 2. 學生點擊登記區 (點選切換：未交 -> 已交 -> 缺漏) -->
-        <div class="card" id="markingCard" style="display: none;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                <div>
-                    <h3 style="margin: 0;">✍️ 登記作業：<span id="currentHwTitle" style="color:#1a73e8;"></span></h3>
-                    <small style="color: #666;">💡 點擊學生卡片即可快速切換狀態：<strong>未交 ➔ 已交 ➔ 有缺漏</strong></small>
+        <!-- ================= 分頁 1: 登記作業 ================= -->
+        <div id="tab1Content" class="card">
+            
+            <!-- 4. 新增作業項目 -->
+            <h3>4. 作業項目管理</h3>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <input type="text" id="newHwNameInput" placeholder="輸入新作業名稱 (例如: 第一課習作)" style="flex: 1;">
+                <button id="addHwBtn">＋ 新增作業</button>
+            </div>
+
+            <!-- 作業項目標籤點選區 -->
+            <div class="hw-chips" id="hwChipsContainer">
+                <!-- 動態載入作業標籤 -->
+            </div>
+
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 25px 0;">
+
+            <!-- 學生卡片點擊登記區 -->
+            <div id="registrationArea" style="display: none;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <h3 style="margin: 0;">✍️ 登記作業：<span id="currentHwTitle" style="color:#1a73e8;"></span></h3>
+                        <small style="color: #666;">💡 點擊學生卡片快速切換：<strong>未交 ➔ 已交 ➔ 有缺漏</strong></small>
+                    </div>
+                    <button class="btn-success" id="saveStatusBtn">💾 儲存登記變更</button>
                 </div>
-                <button class="btn-success" id="saveStatusBtn">💾 儲存登記變更</button>
-            </div>
 
-            <div class="student-grid" id="studentGrid">
-                <!-- 動態產生學生點擊卡片 -->
+                <div class="student-grid" id="studentGrid">
+                    <!-- 動態點擊學生卡片 -->
+                </div>
+            </div>
+            <div id="noHwSelectedHint" style="text-align: center; color: #888; padding: 30px;">
+                👈 請先點擊上方的「作業項目標籤」進行登記！
             </div>
         </div>
 
-        <!-- 未完成總覽 -->
-        <div class="card">
-            <h3>🔍 本班未完成作業總覽名單</h3>
-            <button class="btn-secondary" id="refreshSummaryBtn" style="margin-bottom: 10px;">🔄 重新彙整清單</button>
+        <!-- ================= 分頁 2: 未完成總覽名單 ================= -->
+        <div id="tab2Content" class="card" style="display: none;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0;">🔍 未完成作業學生總覽</h3>
+                <button class="btn-secondary" id="refreshSummaryBtn">🔄 重新整理</button>
+            </div>
+            <p style="font-size: 13px; color: #666; margin-top: 5px;">
+                💡 <strong>提示：</strong>直接點選學生右側的「作業標籤」，即可快速跳轉至該作業進行修改！
+            </p>
+
             <table>
                 <thead>
                     <tr>
                         <th style="width: 15%;">座號</th>
                         <th style="width: 25%;">姓名</th>
-                        <th style="width: 60%;">未完成的作業項目</th>
+                        <th style="width: 60%;">未完成的作業項目 (點擊可跳轉編輯)</th>
                     </tr>
                 </thead>
                 <tbody id="summaryTableBody">
-                    <tr><td colspan="3" style="color: #888;">請點擊上方按鈕整理總覽...</td></tr>
+                    <!-- 動態產生未完成學生 -->
                 </tbody>
             </table>
         </div>
@@ -136,7 +164,7 @@
     import { getFirestore, collection, query, where, getDocs, doc, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     // 🔴 請替換為您的 Firebase 設定 🔴
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyDFzSAc08kJLlafPk-Ttb6zdlHvgMj05u8",
   authDomain: "chinese-class-12561.firebaseapp.com",
@@ -153,34 +181,68 @@ const firebaseConfig = {
     let currentClass = "";
     let currentHw = "";
     let currentStudents = [];
-    let studentStates = {}; // 暫存目前的狀態 { "studentId": "not_submitted" | "submitted" | "incomplete" }
+    let studentStates = {};
 
-    // 1. 選擇班級並進入
-    document.getElementById('enterClassBtn').addEventListener('click', async () => {
-        const input = document.getElementById('targetClassInput').value.trim();
-        if (!input) {
-            alert("請輸入班級！");
-            return;
+    // 1. 自動檢查記憶的班級
+    window.addEventListener('DOMContentLoaded', () => {
+        const savedClass = localStorage.getItem('chinese_app_class');
+        if (savedClass) {
+            enterClass(savedClass);
         }
+    });
 
-        currentClass = input;
-        document.getElementById('displayClassName').innerText = `${currentClass} 班`;
-        document.getElementById('step1View').style.display = 'none';
-        document.getElementById('step2View').style.display = 'block';
+    document.getElementById('enterClassBtn').addEventListener('click', () => {
+        const inputClass = document.getElementById('classInput').value.trim();
+        if (inputClass) {
+            localStorage.setItem('chinese_app_class', inputClass);
+            enterClass(inputClass);
+        } else {
+            alert("請輸入班級！");
+        }
+    });
+
+    document.getElementById('changeClassBtn').addEventListener('click', () => {
+        localStorage.removeItem('chinese_app_class');
+        document.getElementById('classSelectView').style.display = 'block';
+        document.getElementById('mainDashboardView').style.display = 'none';
+    });
+
+    async function enterClass(className) {
+        currentClass = className;
+        document.getElementById('currentClassText').innerText = `${currentClass} 班`;
+        document.getElementById('classSelectView').style.display = 'none';
+        document.getElementById('mainDashboardView').style.display = 'block';
 
         await loadStudents();
         await loadAssignments();
         await loadSummary();
-    });
+    }
 
-    // 切換班級按鈕
-    document.getElementById('switchClassBtn').addEventListener('click', () => {
-        document.getElementById('step1View').style.display = 'block';
-        document.getElementById('step2View').style.display = 'none';
-        document.getElementById('markingCard').style.display = 'none';
-    });
+    // 2. 分頁切換邏輯
+    const tab1Btn = document.getElementById('tab1Btn');
+    const tab2Btn = document.getElementById('tab2Btn');
+    const tab1Content = document.getElementById('tab1Content');
+    const tab2Content = document.getElementById('tab2Content');
 
-    // 載入該班學生
+    function switchTab(tabIndex) {
+        if (tabIndex === 1) {
+            tab1Btn.className = 'tab-btn active';
+            tab2Btn.className = 'tab-btn';
+            tab1Content.style.display = 'block';
+            tab2Content.style.display = 'none';
+        } else {
+            tab2Btn.className = 'tab-btn active';
+            tab1Btn.className = 'tab-btn';
+            tab2Content.style.display = 'block';
+            tab1Content.style.display = 'none';
+            loadSummary(); // 切換到總覽時自動重新整理
+        }
+    }
+
+    tab1Btn.addEventListener('click', () => switchTab(1));
+    tab2Btn.addEventListener('click', () => switchTab(2));
+
+    // 載入學生資料
     async function loadStudents() {
         const q = query(collection(db, "students"), where("class", "==", currentClass));
         const snap = await getDocs(q);
@@ -189,43 +251,34 @@ const firebaseConfig = {
         currentStudents.sort((a, b) => a.seat - b.seat);
     }
 
-    // 3. 載入作業項目清單 (顯示建立日期)
+    // 4. 載入並渲染作業項目 (Chips 標籤)
     async function loadAssignments() {
         const q = query(collection(db, "assignments"), where("class", "==", currentClass));
         const snap = await getDocs(q);
-        const listContainer = document.getElementById('hwListContainer');
-        listContainer.innerHTML = '';
+        const container = document.getElementById('hwChipsContainer');
+        container.innerHTML = '';
 
         if (snap.empty) {
-            listContainer.innerHTML = '<li style="color:#888; text-align:center; padding:10px;">目前尚無作業項目，請在上方新增！</li>';
+            container.innerHTML = '<span style="color:#888;">尚未建立任何作業項目，請在上方新增！</span>';
             return;
         }
 
         snap.forEach(docSnap => {
             const data = docSnap.data();
-            const li = document.createElement('li');
-            li.className = 'hw-item';
+            const chip = document.createElement('div');
+            chip.className = `hw-chip ${data.hwName === currentHw ? 'active' : ''}`;
             
-            // 格式化日期 (YYYY/MM/DD)
-            const dateStr = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString() : '未知日期';
-
-            li.innerHTML = `
-                <div class="hw-info">
-                    <strong>${data.hwName}</strong>
-                    <span class="hw-date">📅 建立於：${dateStr}</span>
-                </div>
-                <div>
-                    <button onclick="window.selectHw('${data.hwName}')">✍️ 點擊登記</button>
-                    <button class="btn-danger" onclick="window.deleteHw('${docSnap.id}', '${data.hwName}')">🗑️ 刪除</button>
-                </div>
+            chip.innerHTML = `
+                <span onclick="window.selectHw('${data.hwName}')">📖 ${data.hwName}</span>
+                <span class="del-btn" onclick="event.stopPropagation(); window.deleteAssignment('${data.hwName}')">✕</span>
             `;
-            listContainer.appendChild(li);
+            container.appendChild(chip);
         });
     }
 
     // 4. 新增作業項目
     document.getElementById('addHwBtn').addEventListener('click', async () => {
-        const hwName = document.getElementById('newHwInput').value.trim();
+        const hwName = document.getElementById('newHwNameInput').value.trim();
         if (!hwName) {
             alert("請輸入作業名稱！");
             return;
@@ -238,32 +291,56 @@ const firebaseConfig = {
             createdAt: new Date()
         });
 
-        document.getElementById('newHwInput').value = '';
+        document.getElementById('newHwNameInput').value = '';
         await loadAssignments();
+        await selectHw(hwName); // 新增後自動選取該作業
     });
 
-    // 4. 刪除作業項目
-    window.deleteHw = async (docId, hwName) => {
-        if (confirm(`確定要刪除「${hwName}」這項作業嗎？此操作無法復原。`)) {
-            await deleteDoc(doc(db, "assignments", docId));
-            if (currentHw === hwName) {
-                document.getElementById('markingCard').style.display = 'none';
-            }
-            await loadAssignments();
-            await loadSummary();
+    // 4. 刪除作業項目 (連帶清除 records 紀錄，總覽也會一併消失)
+    window.deleteAssignment = async (hwName) => {
+        if (!confirm(`確定要刪除作業「${hwName}」嗎？\n此動作將同時清除該作業在【未完成總覽】中的所有紀錄！`)) {
+            return;
         }
+
+        const batch = writeBatch(db);
+
+        // A. 刪除 assignments 集合項目
+        const hwDocRef = doc(db, "assignments", `${currentClass}_${hwName}`);
+        batch.delete(hwDocRef);
+
+        // B. 批次刪除 records 集合中關於這項作業的所有紀錄
+        const q = query(collection(db, "records"), where("class", "==", currentClass), where("hwName", "==", hwName));
+        const recordsSnap = await getDocs(q);
+        recordsSnap.forEach(recordDoc => {
+            batch.delete(recordDoc.ref);
+        });
+
+        await batch.commit();
+
+        if (currentHw === hwName) {
+            currentHw = "";
+            document.getElementById('registrationArea').style.display = 'none';
+            document.getElementById('noHwSelectedHint').style.display = 'block';
+        }
+
+        alert(`已成功刪除作業「${hwName}」！`);
+        await loadAssignments();
+        await loadSummary();
     };
 
-    // 2. 選擇某項作業，開始登記學生狀態
+    // 點選作業，開啟登記區
     window.selectHw = async (hwName) => {
         currentHw = hwName;
         document.getElementById('currentHwTitle').innerText = hwName;
-        document.getElementById('markingCard').style.display = 'block';
+        document.getElementById('registrationArea').style.display = 'block';
+        document.getElementById('noHwSelectedHint').style.display = 'none';
 
-        // 撈取此作業的既有紀錄
+        await loadAssignments(); // 重新整理 active 狀態
+
+        // 讀取該作業既有資料
         const q = query(collection(db, "records"), where("class", "==", currentClass), where("hwName", "==", hwName));
         const snap = await getDocs(q);
-        
+
         studentStates = {};
         snap.forEach(doc => {
             const d = doc.data();
@@ -273,23 +350,21 @@ const firebaseConfig = {
         renderStudentGrid();
     };
 
-    // 渲染學生卡片網格 (預設狀態為「未交」)
+    // 渲染學生卡片 (預設未交 -> 已交 -> 缺漏)
     function renderStudentGrid() {
         const grid = document.getElementById('studentGrid');
         grid.innerHTML = '';
 
         if (currentStudents.length === 0) {
-            grid.innerHTML = '<p style="color:red;">該班尚無學生資料，請先至匯入頁面建立學生！</p>';
+            grid.innerHTML = '<p style="color:red; grid-column: 1/-1;">找不到學生資料！請確認 Excel 是否已上傳。</p>';
             return;
         }
 
         currentStudents.forEach(student => {
-            // 2. 預設是未交 (not_submitted)
-            const status = studentStates[student.seat] || 'not_submitted';
-            
+            const status = studentStates[student.seat] || 'not_submitted'; // 預設未交
             const card = document.createElement('div');
             card.className = `student-card status-${status}`;
-            
+
             let statusText = "❌ 未交";
             if (status === 'submitted') statusText = "✅ 已交";
             if (status === 'incomplete') statusText = "⚠️ 有缺漏";
@@ -300,7 +375,7 @@ const firebaseConfig = {
                 <div class="student-status">${statusText}</div>
             `;
 
-            // 2. 點擊切換狀態：未交 -> 已交 -> 缺漏 -> 未交
+            // 點擊卡片循環切換
             card.addEventListener('click', () => {
                 if (status === 'not_submitted') {
                     studentStates[student.seat] = 'submitted';
@@ -309,14 +384,14 @@ const firebaseConfig = {
                 } else {
                     studentStates[student.seat] = 'not_submitted';
                 }
-                renderStudentGrid(); // 重新渲染更新顏色
+                renderStudentGrid();
             });
 
             grid.appendChild(card);
         });
     }
 
-    // 儲存登記變更至 Firebase
+    // 儲存登記變更
     document.getElementById('saveStatusBtn').addEventListener('click', async () => {
         const batch = writeBatch(db);
 
@@ -336,14 +411,13 @@ const firebaseConfig = {
         });
 
         await batch.commit();
-        alert(`🎉 「${currentHw}」登記紀錄儲存成功！`);
-        await loadSummary();
+        alert(`🎉 作業「${currentHw}」登記儲存成功！`);
     });
 
-    // 彙整未完成清單
+    // 3. 彙整總覽名單 & 點擊作業跳轉編輯
     async function loadSummary() {
         const tbody = document.getElementById('summaryTableBody');
-        tbody.innerHTML = '<tr><td colspan="3">彙整中...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3">彙整資料中...</td></tr>';
 
         const q = query(collection(db, "records"), where("class", "==", currentClass));
         const snap = await getDocs(q);
@@ -369,10 +443,15 @@ const firebaseConfig = {
                 hasMissing = true;
                 const tr = document.createElement('tr');
                 
+                // 3. 產生可點擊的作業標籤 (點擊後 jumpToEdit)
                 const tags = student.missing.map(m => {
-                    return m.status === 'not_submitted' 
-                        ? `<span class="badge badge-red">${m.hwName} (未交)</span>`
-                        : `<span class="badge badge-yellow">${m.hwName} (缺漏)</span>`;
+                    const badgeClass = m.status === 'not_submitted' ? 'badge-red' : 'badge-yellow';
+                    const statusText = m.status === 'not_submitted' ? '未交' : '缺漏';
+                    return `
+                        <span class="clickable-badge ${badgeClass}" onclick="window.jumpToEdit('${m.hwName}')">
+                            ${m.hwName} (${statusText}) ✏️
+                        </span>
+                    `;
                 }).join(' ');
 
                 tr.innerHTML = `
@@ -385,9 +464,15 @@ const firebaseConfig = {
         });
 
         if (!hasMissing) {
-            tbody.innerHTML = '<tr><td colspan="3" style="color:green; font-weight:bold; padding:15px;">🎉 太棒了！全班目前沒有任何欠繳的作業！</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="3" style="color:green; font-weight:bold; padding:20px;">🎉 太棒了！本班目前沒有任何未完成或缺漏的作業！</td></tr>';
         }
     }
+
+    // 3. 點擊總覽標籤，跳轉回分頁一並載入該作業
+    window.jumpToEdit = async (hwName) => {
+        switchTab(1); // 切換到登記分頁
+        await selectHw(hwName); // 開啟該項作業
+    };
 
     document.getElementById('refreshSummaryBtn').addEventListener('click', loadSummary);
 </script>
