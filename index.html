@@ -13,8 +13,8 @@
         * { box-sizing: border-box; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: #f8fafc; margin: 0; padding: 20px; color: #1e293b; }
         
-        /* 響應式容器：電腦螢幕寬版，手機螢幕自動滿版 */
-        .container { max-width: 900px; margin: 0 auto; }
+        /* 響應式容器 */
+        .container { max-width: 1050px; margin: 0 auto; }
         
         /* 卡片通用樣式 */
         .card { background: white; padding: 22px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; border: 1px solid #f1f5f9; }
@@ -51,22 +51,23 @@
 
         /* 缺交作業總表卡片與網格 */
         .section-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
-        .student-item-card { background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); }
+        .student-item-card { background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 16px; box-shadow: 0 2px 6px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: space-between; }
         .student-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; font-size: 18px; font-weight: bold; }
-        .seat-badge { width: 28px; height: 28px; background: #dbeafe; color: #1e40af; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+        .seat-badge { width: 28px; height: 28px; background: #dbeafe; color: #1e40af; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
         .missing-list { list-style: none; padding: 0; margin: 0; }
-        .missing-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 8px; border-top: 1px solid #f1f5f9; font-size: 15px; cursor: pointer; border-radius: 6px; transition: background 0.15s; }
+        .missing-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 8px; border-top: 1px solid #f1f5f9; font-size: 14px; cursor: pointer; border-radius: 6px; transition: background 0.15s; }
         .missing-item:hover { background: #f8fafc; }
         .missing-info { display: flex; align-items: center; gap: 6px; color: #b91c1c; font-weight: 500; }
-        .registrar-tag { font-size: 12px; color: #94a3b8; background: #f8fafc; padding: 3px 8px; border-radius: 4px; border: 1px solid #f1f5f9; }
+        .registrar-tag { font-size: 12px; color: #94a3b8; background: #f8fafc; padding: 3px 8px; border-radius: 4px; border: 1px solid #f1f5f9; flex-shrink: 0; }
 
-        /* 作業項目列表樣式 (顯示日期-名稱-登記人) */
+        /* 作業項目列表樣式 */
         .hw-bar-item { background: #f8fafc; border: 1px solid #e2e8f0; border-left: 5px solid #2563eb; padding: 14px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
         .hw-info-title { font-weight: bold; font-size: 16px; color: #1e293b; }
         .hw-info-sub { font-size: 13px; color: #64748b; margin-top: 3px; }
 
         /* 學生點擊網格 */
-        .clickable-student { padding: 14px 10px; border-radius: 10px; border: 2px solid #cbd5e1; text-align: center; cursor: pointer; user-select: none; }
+        .clickable-student { padding: 14px 10px; border-radius: 10px; border: 2px solid #cbd5e1; text-align: center; cursor: pointer; user-select: none; transition: transform 0.1s; }
+        .clickable-student:active { transform: scale(0.96); }
         .status-not_submitted { background: #fef2f2; border-color: #ef4444; color: #991b1b; }
         .status-submitted { background: #f0fdf4; border-color: #22c55e; color: #166534; }
         .status-incomplete { background: #fffbeb; border-color: #f59e0b; color: #92400e; }
@@ -75,19 +76,23 @@
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: white; padding: 25px; border-radius: 16px; width: 90%; max-width: 480px; }
 
-        /* 💻 電腦版適應媒體查詢 (Desktop Optimization) */
+        /* 💻 電腦版適應媒體查詢 (多欄多列、平均分配) */
         @media (min-width: 768px) {
             body { padding: 30px; }
             .login-card-layout { max-width: 480px; margin: 0 auto; }
-            .missing-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; }
-            .student-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+            
+            /* 第四頁缺交總表：多欄均勻分配網格 (3欄) */
+            .missing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+            
+            /* 第三頁學生登記網格：電腦版自動平均排成 5 ~ 6 欄 */
+            .student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
         }
 
-        /* 📱 手機版適應媒體查詢 (Mobile Optimization) */
+        /* 📱 手機版適應媒體查詢 (單欄至雙欄最適化) */
         @media (max-width: 767px) {
             body { padding: 10px; }
-            .missing-grid { display: block; }
-            .student-grid { grid-template-columns: repeat(2, 1fr); }
+            .missing-grid { display: flex; flex-direction: column; gap: 12px; }
+            .student-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
         }
     </style>
 </head>
@@ -118,7 +123,7 @@
         <div class="form-group">
             <label>請選擇姓名 / 身份</label>
             <select id="userSelect">
-                <!-- 動態注入學生 -->
+                <!-- 動態注入導師與學生選項 -->
             </select>
         </div>
         
@@ -161,13 +166,12 @@
                 <div id="hwBarsContainer"></div>
             </div>
 
-            <!-- 學生登記勾選區 (含連動刪除按鈕) -->
+            <!-- 學生登記勾選區 -->
             <div id="markingArea" class="card" style="display: none;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:10px;">
                     <div style="font-weight:bold; font-size:17px;">✍️ 登記作業：<span id="currentHwTitle" style="color:#2563eb;"></span></div>
                     
                     <div style="display:flex; gap:8px;">
-                        <!-- 新增的刪除按鈕 -->
                         <button id="deleteHwInMarkingBtn" class="btn-danger" style="display:none;">🗑️ 刪除項目</button>
                         <button id="saveRecordsBtn" class="btn-primary">💾 儲存變更</button>
                     </div>
@@ -181,7 +185,7 @@
         <div id="page4Content">
             <div class="section-title">📋 學生未完成清單</div>
             <div id="studentMissingContainer" class="missing-grid">
-                <!-- 動態產生缺交卡片 -->
+                <!-- 動態產生多欄缺交卡片 -->
             </div>
         </div>
 
@@ -212,18 +216,16 @@
     import { getFirestore, collection, query, where, getDocs, doc, setDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     // 🔴 請替換為您的 Firebase 設定 🔴
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyDFzSAc08kJLlafPk-Ttb6zdlHvgMj05u8",
-  authDomain: "chinese-class-12561.firebaseapp.com",
-  projectId: "chinese-class-12561",
-  storageBucket: "chinese-class-12561.firebasestorage.app",
-  messagingSenderId: "767545693381",
-  appId: "1:767545693381:web:4e4b0eed26e5fbda054cac",
-  measurementId: "G-SRSMVT5SE0"
-};
+    const firebaseConfig = {
+        apiKey: "AIzaSy...",
+        authDomain: "your-project.firebaseapp.com",
+        projectId: "your-project-id",
+        storageBucket: "your-project.appspot.com",
+        messagingSenderId: "123456789",
+        appId: "1:123456789:web:abcdef"
+    };
 
-    const MENTOR_PIN = "820202"; // 導師預設密碼
+    const MENTOR_PIN = "8888"; // 導師預設密碼
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
@@ -232,7 +234,7 @@ const firebaseConfig = {
     let currentUser = "";
     let isMentor = false;
     let currentHw = "";
-    let currentHwCreatedBy = ""; // 紀錄當前點選的作業由誰建立
+    let currentHwCreatedBy = "";
     let currentStudents = [];
     let studentStates = {};
 
@@ -276,12 +278,10 @@ const firebaseConfig = {
         });
     }
 
-    // Modal 控制
     const importModal = document.getElementById('importModal');
     document.getElementById('openImportModalBtn').onclick = () => importModal.style.display = 'flex';
     document.getElementById('closeImportModalBtn').onclick = () => importModal.style.display = 'none';
 
-    // 匯入 Excel
     document.getElementById('startImportBtn').onclick = async () => {
         const fileInput = document.getElementById('excelFileInput');
         const statusText = document.getElementById('importStatusText');
@@ -338,7 +338,6 @@ const firebaseConfig = {
         reader.readAsArrayBuffer(file);
     };
 
-    // 選擇班級後進入第二頁
     async function selectClassAndGoToPage2(className) {
         currentClass = className;
         document.getElementById('displaySelectedClass').innerText = `${currentClass} 班`;
@@ -355,7 +354,7 @@ const firebaseConfig = {
         currentStudents.forEach(s => {
             const opt = document.createElement('option');
             opt.value = s.seat;
-            opt.innerText = `${s.seat}號 ${s.name}`;
+            opt.innerText = `${s.seat}號 🧑‍🎓 ${s.name}`;
             userSelect.appendChild(opt);
         });
 
@@ -369,13 +368,12 @@ const firebaseConfig = {
         document.getElementById('loginPasswordInput').value = '';
     };
 
-    // 登入驗證
     document.getElementById('loginBtn').onclick = () => {
         const selectedValue = document.getElementById('userSelect').value;
-        const password = formatPassword(document.getElementById('loginPasswordInput').value);
+        const rawInputPassword = document.getElementById('loginPasswordInput').value.trim();
 
         if (selectedValue === "mentor") {
-            if (password === MENTOR_PIN) {
+            if (rawInputPassword === MENTOR_PIN) {
                 currentUser = "導師";
                 isMentor = true;
                 enterDashboard();
@@ -385,8 +383,9 @@ const firebaseConfig = {
         } else {
             const student = currentStudents.find(s => String(s.seat) === String(selectedValue));
             if (student) {
+                const inputPwd = formatPassword(rawInputPassword);
                 const dbPwd = formatPassword(student.password);
-                if (dbPwd && dbPwd === password) {
+                if (dbPwd && dbPwd === inputPwd) {
                     currentUser = student.name;
                     isMentor = false;
                     enterDashboard();
@@ -402,7 +401,7 @@ const firebaseConfig = {
         document.getElementById('dashboard').style.display = 'block';
 
         document.getElementById('headerClassText').innerText = `${currentClass} 班`;
-        document.getElementById('headerUserText').innerText = currentUser;
+        document.getElementById('headerUserText').innerText = isMentor ? `🧑‍🏫 ${currentUser}` : `🧑‍🎓 ${currentUser}`;
 
         switchToPage4();
     }
@@ -414,7 +413,6 @@ const firebaseConfig = {
         loadClassButtons();
     };
 
-    // 頁籤切換
     const tab3Btn = document.getElementById('tab3Btn');
     const tab4Btn = document.getElementById('tab4Btn');
     const page3Content = document.getElementById('page3Content');
@@ -444,7 +442,6 @@ const firebaseConfig = {
         window.selectHw(hwName, createdBy);
     };
 
-    // 1. 載入作業列表 (格式：日期-名稱-登記人 & 2. 權限管控)
     async function loadHomeworkBars() {
         const container = document.getElementById('hwBarsContainer');
         const q = query(collection(db, "assignments"), where("class", "==", currentClass));
@@ -462,14 +459,12 @@ const firebaseConfig = {
             const createdBy = data.createdBy || '導師';
             const dateStr = data.dateStr || '2026-09-05';
 
-            // 判斷當前使用者是否有權限刪除/編輯此作業 (導師 OR 建立者本人)
             const canManage = isMentor || createdBy === currentUser;
 
             const item = document.createElement('div');
             item.className = 'hw-bar-item';
             item.innerHTML = `
                 <div>
-                    <!-- 1. 顯示：日期 - 作業名稱 - 登記人 -->
                     <div class="hw-info-title">📖 [${dateStr}] ${hwName}</div>
                     <div class="hw-info-sub">登記人：<strong>${createdBy}</strong></div>
                 </div>
@@ -487,7 +482,6 @@ const firebaseConfig = {
         });
     }
 
-    // 新增作業條 (寫入建立者與日期)
     document.getElementById('addHwBtn').onclick = async () => {
         const hwName = document.getElementById('newHwInput').value.trim();
         if (!hwName) return alert("請輸入作業名稱！");
@@ -507,16 +501,12 @@ const firebaseConfig = {
         window.selectHw(hwName, currentUser);
     };
 
-    // 全域連動刪除作業功能 (刪除作業檔 + 所有學生的繳交紀錄)
     window.deleteHw = async (hwName) => {
         if (!confirm(`確定要刪除「${hwName}」這項作業嗎？\n⚠️ 此操作將連同全班所有繳交紀錄與缺交總表項目一併刪除！`)) return;
 
         const batch = writeBatch(db);
-        
-        // 刪除 assignments
         batch.delete(doc(db, "assignments", `${currentClass}_${hwName}`));
 
-        // 刪除 records 集合中該作業的所有紀錄
         const q = query(collection(db, "records"), where("class", "==", currentClass), where("hwName", "==", hwName));
         const recSnap = await getDocs(q);
         recSnap.forEach(d => batch.delete(d.ref));
@@ -529,14 +519,10 @@ const firebaseConfig = {
         loadSummaryList();
     };
 
-    // 4. 登記區的刪除項目按鈕事件
     document.getElementById('deleteHwInMarkingBtn').onclick = () => {
-        if (currentHw) {
-            window.deleteHw(currentHw);
-        }
+        if (currentHw) window.deleteHw(currentHw);
     };
 
-    // 點選作業開始登記
     window.selectHw = async (hwName, createdBy) => {
         currentHw = hwName;
         currentHwCreatedBy = createdBy;
@@ -544,7 +530,6 @@ const firebaseConfig = {
         document.getElementById('currentHwTitle').innerText = hwName;
         document.getElementById('markingArea').style.display = 'block';
 
-        // 判斷是否顯示刪除項目按鈕
         const canManage = isMentor || currentHwCreatedBy === currentUser;
         document.getElementById('deleteHwInMarkingBtn').style.display = canManage ? 'inline-block' : 'none';
 
@@ -585,7 +570,6 @@ const firebaseConfig = {
         });
     }
 
-    // 儲存登記變更
     document.getElementById('saveRecordsBtn').onclick = async () => {
         const batch = writeBatch(db);
         const todayStr = new Date().toISOString().split('T')[0];
@@ -610,7 +594,6 @@ const firebaseConfig = {
         loadHomeworkBars();
     };
 
-    // 渲染缺交作業總表
     async function loadSummaryList() {
         const container = document.getElementById('studentMissingContainer');
         container.innerHTML = '<div style="color:#94a3b8; text-align:center; grid-column:1/-1;">資料載入中...</div>';
