@@ -7,33 +7,54 @@
     <!-- 引入 SheetJS 用來讀取 Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
-        .container { max-width: 600px; margin: 0 auto; background: #f9f9f9; padding: 20px; border-radius: 8px; }
-        button { padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
-        button:hover { background: #45a049; }
-        #status { margin-top: 15px; color: blue; font-weight: bold; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 30px; background-color: #f0f2f5; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h2 { margin-top: 0; color: #1a73e8; }
+        .upload-area { border: 2px dashed #ccc; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px; background: #fafafa; }
+        button { padding: 12px 24px; background: #1a73e8; color: white; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; width: 100%; font-weight: bold; }
+        button:hover { background: #1557b0; }
+        button:disabled { background: #cccccc; cursor: not-allowed; }
+        #status { margin-top: 20px; padding: 15px; border-radius: 6px; display: none; font-weight: bold; text-align: center; }
+        .success { background: #e6f4ea; color: #1e8e3e; border: 1px solid #ceead6; }
+        .error { background: #fce8e6; color: #d93025; border: 1px solid #fad2cf; }
+        .info { background: #e8f0fe; color: #1a73e8; border: 1px solid #d2e3fc; }
+        table.demo-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+        table.demo-table th, table.demo-table td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        table.demo-table th { background-color: #f2f2f2; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h2>📝 匯入學生 Excel 資料</h2>
-    <p>請確保 Excel 標題列包含：<strong>班級</strong>、<strong>座號</strong>、<strong>姓名</strong></p>
     
-    <input type="file" id="excelFile" accept=".xlsx, .xls">
-    <br>
+    <div style="background: #fff3cd; color: #856404; padding: 10px; border-radius: 6px; margin-bottom: 20px; font-size: 14px; border: 1px solid #ffeeba;">
+        <strong>⚠️ Excel 格式要求：</strong><br>
+        第一列必須精準為這三個字（不能有空格）：
+        <table class="demo-table">
+            <tr><th>班級</th><th>座號</th><th>姓名</th></tr>
+            <tr><td>701</td><td>1</td><td>王小明</td></tr>
+        </table>
+    </div>
+    
+    <div class="upload-area">
+        <input type="file" id="excelFile" accept=".xlsx, .xls, .csv" style="font-size: 16px;">
+    </div>
+    
     <button id="uploadBtn">讀取並匯入 Firebase</button>
     <div id="status"></div>
 </div>
 
 <!-- 引入 Firebase 模組 -->
 <script type="module">
-    // 1. 載入 Firebase 核心與 Firestore 功能
+    // 1. 載入 Firebase (使用 10.8.0 版本)
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, doc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // 🔴🔴🔴 請將下方的 firebaseConfig 替換成您自己的！ 🔴🔴🔴
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+    // ==========================================
+    // 🔴 步驟 1：請在下方填入您的 Firebase 金鑰 🔴
+    // ==========================================
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
 const firebaseConfig = {
   apiKey: "AIzaSyDFzSAc08kJLlafPk-Ttb6zdlHvgMj05u8",
   authDomain: "chinese-class-12561.firebaseapp.com",
@@ -43,70 +64,96 @@ const firebaseConfig = {
   appId: "1:767545693381:web:4e4b0eed26e5fbda054cac",
   measurementId: "G-SRSMVT5SE0"
 };
+    // ==========================================
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+    let db;
+    const statusDiv = document.getElementById('status');
+    const uploadBtn = document.getElementById('uploadBtn');
 
-    // 初始化 Firebase
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    // 顯示訊息的小工具函數
+    function showMessage(msg, type) {
+        statusDiv.style.display = 'block';
+        statusDiv.className = type;
+        statusDiv.innerText = msg;
+    }
 
-    // 2. 監聽按鈕點擊事件
-    document.getElementById('uploadBtn').addEventListener('click', () => {
+    // 初始化 Firebase (加入防呆機制)
+    try {
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        console.log("Firebase 初始化成功");
+    } catch (error) {
+        alert("Firebase 初始化失敗！請檢查您的 firebaseConfig 是否填寫正確，並且沒有漏掉雙引號。\n\n詳細錯誤：" + error.message);
+        showMessage("Firebase 初始化失敗，請檢查金鑰設定。", "error");
+        uploadBtn.disabled = true;
+    }
+
+    // 監聽按鈕點擊
+    uploadBtn.addEventListener('click', () => {
         const fileInput = document.getElementById('excelFile');
-        const statusDiv = document.getElementById('status');
 
         if (fileInput.files.length === 0) {
-            alert("請先選擇 Excel 檔案！");
+            alert("請先點擊「選擇檔案」上傳您的 Excel 檔！");
             return;
         }
 
         const file = fileInput.files[0];
         const reader = new FileReader();
 
-        statusDiv.innerText = "讀取 Excel 中...";
+        uploadBtn.disabled = true;
+        showMessage("🔄 正在讀取 Excel 檔案，請稍候...", "info");
 
         reader.onload = async function(e) {
             try {
+                // 讀取 Excel
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 
-                // 抓取第一個工作表
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
                 
-                // 將 Excel 轉換為 JSON 陣列
-                const json = XLSX.utils.sheet_to_json(worksheet);
-                console.log("讀取到的資料:", json);
+                const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" }); // 空白儲存格補空字串
+                
+                if(json.length === 0) {
+                    throw new Error("Excel 檔案是空的！");
+                }
 
-                await uploadToFirebase(json, statusDiv);
+                // 檢查表頭欄位
+                const firstRow = json[0];
+                if (!("班級" in firstRow) || !("座號" in firstRow) || !("姓名" in firstRow)) {
+                     throw new Error("Excel 標題列錯誤！請確保包含「班級」、「座號」、「姓名」。");
+                }
+
+                console.log(`成功讀取 ${json.length} 筆資料`, json);
+                await uploadToFirebase(json);
+
             } catch (error) {
                 console.error(error);
-                statusDiv.innerText = "讀取失敗，請檢查檔案格式！";
+                alert("讀取 Excel 發生錯誤：\n" + error.message);
+                showMessage("❌ " + error.message, "error");
+                uploadBtn.disabled = false;
             }
         };
 
         reader.readAsArrayBuffer(file);
     });
 
-    // 3. 批次上傳至 Firebase 函數
-    async function uploadToFirebase(students, statusDiv) {
-        statusDiv.innerText = "開始上傳至 Firebase，請稍候...";
+    // 批次上傳函數
+    async function uploadToFirebase(students) {
+        showMessage("☁️ 正在上傳資料至 Firebase，請勿關閉網頁...", "info");
         
         try {
-            const batch = writeBatch(db); // 使用批次寫入提升速度
+            const batch = writeBatch(db); 
+            let validCount = 0;
 
             students.forEach((student) => {
-                // 確保欄位名稱與您的 Excel 表頭一致 (班級, 座號, 姓名)
-                const className = String(student["班級"] || "").trim();
-                const seatNumber = String(student["座號"] || "").trim();
-                const name = String(student["姓名"] || "").trim();
+                const className = String(student["班級"]).trim();
+                const seatNumber = String(student["座號"]).trim();
+                const name = String(student["姓名"]).trim();
 
+                // 確保三個欄位都有資料才處理
                 if(className && seatNumber && name) {
-                    // 自動補零，例如 1 號變成 01
                     const formattedSeat = seatNumber.padStart(2, '0');
-                    // 組合出專屬 ID，例如 701_01
                     const studentId = `${className}_${formattedSeat}`;
 
                     const docRef = doc(db, "students", studentId);
@@ -115,17 +162,25 @@ const analytics = getAnalytics(app);
                         seat: Number(seatNumber),
                         name: name
                     });
+                    validCount++;
                 }
             });
 
-            await batch.commit(); // 執行寫入
-            statusDiv.innerText = "🎉 匯入成功！您可以去 Firebase 後台查看資料了。";
-            statusDiv.style.color = "green";
+            if (validCount === 0) {
+                 throw new Error("找不到有效的學生資料，請檢查欄位內容是否為空。");
+            }
+
+            await batch.commit(); 
+            
+            showMessage(`🎉 匯入成功！共新增 ${validCount} 筆學生資料。您可以前往 Firebase 後台查看了。`, "success");
+            alert(`匯入成功！共處理了 ${validCount} 筆資料。`);
 
         } catch (error) {
-            console.error("上傳失敗:", error);
-            statusDiv.innerText = "❌ 上傳失敗，請打開 F12 查看錯誤訊息。";
-            statusDiv.style.color = "red";
+            console.error("上傳 Firebase 失敗:", error);
+            alert("上傳失敗！\n1. 請確認 Firebase 資料庫規則已設為測試模式 (allow read, write: if true;)\n2. 錯誤細節：" + error.message);
+            showMessage("❌ 上傳失敗，請檢查資料庫規則設定。", "error");
+        } finally {
+            uploadBtn.disabled = false;
         }
     }
 </script>
