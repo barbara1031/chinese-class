@@ -76,19 +76,15 @@
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; z-index: 1000; }
         .modal-content { background: white; padding: 25px; border-radius: 16px; width: 90%; max-width: 480px; }
 
-        /* 💻 電腦版適應媒體查詢 (多欄多列、平均分配) */
+        /* 電腦版適應媒體查詢 */
         @media (min-width: 768px) {
             body { padding: 30px; }
             .login-card-layout { max-width: 480px; margin: 0 auto; }
-            
-            /* 第四頁缺交總表：多欄均勻分配網格 (3欄) */
             .missing-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
-            
-            /* 第三頁學生登記網格：電腦版自動平均排成 5 ~ 6 欄 */
             .student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
         }
 
-        /* 📱 手機版適應媒體查詢 (單欄至雙欄最適化) */
+        /* 手機版適應媒體查詢 */
         @media (max-width: 767px) {
             body { padding: 10px; }
             .missing-grid { display: flex; flex-direction: column; gap: 12px; }
@@ -226,6 +222,7 @@ const firebaseConfig = {
   appId: "1:767545693381:web:4e4b0eed26e5fbda054cac",
   measurementId: "G-SRSMVT5SE0"
 };
+
     const MENTOR_PIN = "8888"; // 導師預設密碼
 
     const app = initializeApp(firebaseConfig);
@@ -238,6 +235,7 @@ const firebaseConfig = {
     let currentHwCreatedBy = "";
     let currentStudents = [];
     let studentStates = {};
+    let hwCreatedByMap = {}; // 快取紀錄每個作業的建立者
 
     function formatPassword(rawPwd) {
         if (!rawPwd) return "";
@@ -438,16 +436,27 @@ const firebaseConfig = {
         loadSummaryList();
     }
 
-    window.jumpToEditHw = (hwName, createdBy) => {
+    // 🔒 點擊缺交項目跳轉前的防護檢查
+    window.jumpToEditHw = (hwName, registeredBy) => {
+        const creator = hwCreatedByMap[hwName] || registeredBy || '導師';
+        const canManage = isMentor || creator === currentUser;
+
+        if (!canManage) {
+            alert(`⚠️ 「${hwName}」由 ${creator} 建立，僅建立者或導師可以進行登記與編輯！`);
+            return;
+        }
+
         switchToPage3();
-        window.selectHw(hwName, createdBy);
+        window.selectHw(hwName, creator);
     };
 
+    // 載入作業列表
     async function loadHomeworkBars() {
         const container = document.getElementById('hwBarsContainer');
         const q = query(collection(db, "assignments"), where("class", "==", currentClass));
         const snap = await getDocs(q);
         container.innerHTML = '';
+        hwCreatedByMap = {};
 
         if (snap.empty) {
             container.innerHTML = '<div style="color:#94a3b8; text-align:center;">尚無作業項目，請在上方新增！</div>';
@@ -459,6 +468,8 @@ const firebaseConfig = {
             const hwName = data.hwName;
             const createdBy = data.createdBy || '導師';
             const dateStr = data.dateStr || '2026-09-05';
+
+            hwCreatedByMap[hwName] = createdBy; // 快取建立者名稱
 
             const canManage = isMentor || createdBy === currentUser;
 
@@ -472,7 +483,7 @@ const firebaseConfig = {
                 <div style="display:flex; gap:6px;">
                     ${canManage 
                         ? `<button style="padding:6px 12px; background:#2563eb; color:white; border:none; border-radius:6px; cursor:pointer;" onclick="window.selectHw('${hwName}', '${createdBy}')">編輯 / 登記</button>` 
-                        : `<button style="padding:6px 12px; background:#cbd5e1; color:#64748b; border:none; border-radius:6px; cursor:not-allowed;" disabled>僅建立者可編輯</button>`}
+                        : `<button style="padding:6px 12px; background:#cbd5e1; color:#64748b; border:none; border-radius:6px; cursor:not-allowed;" disabled title="您不是建立者，無法編輯或登記">僅建立者可登記</button>`}
                     
                     ${canManage 
                         ? `<button style="padding:6px 12px; background:#ef4444; color:white; border:none; border-radius:6px; cursor:pointer;" onclick="window.deleteHw('${hwName}')">刪除</button>` 
@@ -483,6 +494,7 @@ const firebaseConfig = {
         });
     }
 
+    // 新增作業條
     document.getElementById('addHwBtn').onclick = async () => {
         const hwName = document.getElementById('newHwInput').value.trim();
         if (!hwName) return alert("請輸入作業名稱！");
@@ -497,12 +509,22 @@ const firebaseConfig = {
             createdAt: new Date() 
         });
 
+        hwCreatedByMap[hwName] = currentUser;
         document.getElementById('newHwInput').value = '';
         loadHomeworkBars();
         window.selectHw(hwName, currentUser);
     };
 
+    // 🔒 刪除作業防護
     window.deleteHw = async (hwName) => {
+        const creator = hwCreatedByMap[hwName] || '導師';
+        const canManage = isMentor || creator === currentUser;
+
+        if (!canManage) {
+            alert(`⚠️ 您無權限刪除由 ${creator} 建立的作業！`);
+            return;
+        }
+
         if (!confirm(`確定要刪除「${hwName}」這項作業嗎？\n⚠️ 此操作將連同全班所有繳交紀錄與缺交總表項目一併刪除！`)) return;
 
         const batch = writeBatch(db);
@@ -524,15 +546,24 @@ const firebaseConfig = {
         if (currentHw) window.deleteHw(currentHw);
     };
 
+    // 🔒 開啟登記區防護
     window.selectHw = async (hwName, createdBy) => {
+        const creator = createdBy || hwCreatedByMap[hwName] || '導師';
+        const canManage = isMentor || creator === currentUser;
+
+        if (!canManage) {
+            alert(`⚠️ 「${hwName}」由 ${creator} 建立，您沒有權限登記或修改此作業！`);
+            document.getElementById('markingArea').style.display = 'none';
+            return;
+        }
+
         currentHw = hwName;
-        currentHwCreatedBy = createdBy;
+        currentHwCreatedBy = creator;
         
         document.getElementById('currentHwTitle').innerText = hwName;
         document.getElementById('markingArea').style.display = 'block';
 
-        const canManage = isMentor || currentHwCreatedBy === currentUser;
-        document.getElementById('deleteHwInMarkingBtn').style.display = canManage ? 'inline-block' : 'none';
+        document.getElementById('deleteHwInMarkingBtn').style.display = 'inline-block';
 
         const q = query(collection(db, "records"), where("class", "==", currentClass), where("hwName", "==", hwName));
         const snap = await getDocs(q);
@@ -562,6 +593,14 @@ const firebaseConfig = {
             `;
 
             card.onclick = () => {
+                const creator = hwCreatedByMap[currentHw] || currentHwCreatedBy;
+                const canManage = isMentor || creator === currentUser;
+
+                if (!canManage) {
+                    alert("⚠️ 您無權限修改他人建立的作業繳交狀況！");
+                    return;
+                }
+
                 if (status === 'not_submitted') studentStates[student.seat] = 'submitted';
                 else if (status === 'submitted') studentStates[student.seat] = 'incomplete';
                 else studentStates[student.seat] = 'not_submitted';
@@ -571,7 +610,16 @@ const firebaseConfig = {
         });
     }
 
+    // 🔒 儲存變更防護
     document.getElementById('saveRecordsBtn').onclick = async () => {
+        const creator = hwCreatedByMap[currentHw] || currentHwCreatedBy;
+        const canManage = isMentor || creator === currentUser;
+
+        if (!canManage) {
+            alert("⚠️ 您無權限儲存此作業的變更！");
+            return;
+        }
+
         const batch = writeBatch(db);
         const todayStr = new Date().toISOString().split('T')[0];
 
@@ -595,6 +643,7 @@ const firebaseConfig = {
         loadHomeworkBars();
     };
 
+    // 缺交總表渲染
     async function loadSummaryList() {
         const container = document.getElementById('studentMissingContainer');
         container.innerHTML = '<div style="color:#94a3b8; text-align:center; grid-column:1/-1;">資料載入中...</div>';
