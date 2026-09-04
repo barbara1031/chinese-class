@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>國文科作業登記與欠繳追蹤系統</title>
+    <style>
+        body { font-family: 'Segoe UI', Microsoft JhengHei, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 950px; margin: 0 auto; }
+        
+        /* 頁籤切換 */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+        .tab-btn { padding: 12px 24px; background: #e0e0e0; border: none; border-radius: 8px 8px 0 0; font-size: 16px; cursor: pointer; font-weight: bold; color: #666; }
+        .tab-btn.active { background: white; color: #1a73e8; border-top: 4px solid #1a73e8; }
+        
+        .card { background: white; padding: 25px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-bottom: 20px; }
+        .card-single { border-radius: 10px; }
+        
+        h2, h3 { color: #2c3e50; margin-top: 0; }
+        .form-group { display: flex; gap: 15px; margin-bottom: 15px; align-items: center; flex-wrap: wrap; }
+        input[type="text"] { padding: 8px 12px; border: 1px solid #ccc; border-radius: 5px; font-size: 15px; }
+        
+        button { padding: 9px 18px; background: #1a73e8; color: white; border: none; border-radius: 5px; font-size: 15px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #1557b0; }
+        .btn-success { background: #34a853; }
+        .btn-success:hover { background: #2d8e47; }
+        
+        /* 表格樣式 */
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #e0e0e0; padding: 12px; text-align: center; }
+        th { background: #f8f9fa; color: #555; }
+        
+        /* 標籤狀態 */
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 13px; font-weight: bold; margin: 2px; }
+        .badge-red { background: #fce8e6; color: #d93025; border: 1px solid #fad2cf; }
+        .badge-yellow { background: #fef7e0; color: #b06000; border: 1px solid #feefc3; }
+        .badge-green { background: #e6f4ea; color: #137333; }
+        
+        /* 單選鈕組 */
+        .status-options label { margin-right: 12px; cursor: pointer; font-size: 15px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📖 國文科作業登記與追蹤系統</h2>
+
+    <!-- 切換頁籤 -->
+    <div class="tabs">
+        <button class="tab-btn active" id="tab1Btn">📝 登記作業繳交</button>
+        <button class="tab-btn" id="tab2Btn">🔍 未完成總覽名單</button>
+    </div>
+
+    <!-- 功能一：登記作業狀態 -->
+    <div id="section1" class="card">
+        <h3>1. 選擇班級與作業</h3>
+        <div class="form-group">
+            <label>班級：</label>
+            <input type="text" id="classInput" placeholder="例如: 802" style="width: 100px;">
+            
+            <label>作業名稱：</label>
+            <input type="text" id="hwInput" placeholder="例如: 第一課習作" style="width: 180px;">
+
+            <button id="loadStudentsBtn">載入班級名單</button>
+        </div>
+
+        <div id="registerArea" style="display: none; margin-top: 20px;">
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 id="registerTitle">學生作業登記</h3>
+                <button class="btn-success" id="saveRecordsBtn">💾 儲存登記紀錄</button>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">座號</th>
+                        <th style="width: 25%;">姓名</th>
+                        <th style="width: 60%;">繳交狀態</th>
+                    </tr>
+                </thead>
+                <tbody id="studentTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 功能二：整理未完成名單 -->
+    <div id="section2" class="card" style="display: none;">
+        <h3>查詢班級未完成清單</h3>
+        <div class="form-group">
+            <label>班級：</label>
+            <input type="text" id="summaryClassInput" placeholder="例如: 802" style="width: 100px;">
+            <button id="querySummaryBtn">產生未完成項目總覽</button>
+        </div>
+
+        <div id="summaryResultArea" style="display: none; margin-top: 20px;">
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+            <h3 id="summaryTitle">未完成學生名單與缺漏項目</h3>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 10%;">座號</th>
+                        <th style="width: 20%;">姓名</th>
+                        <th style="width: 50%;">未完成的作業項目與狀態</th>
+                        <th style="width: 20%;">未完成總數</th>
+                    </tr>
+                </thead>
+                <tbody id="summaryTableBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, query, where, getDocs, doc, writeBatch, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // 🔴 請替換為您的 Firebase 設定 🔴
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDFzSAc08kJLlafPk-Ttb6zdlHvgMj05u8",
+  authDomain: "chinese-class-12561.firebaseapp.com",
+  projectId: "chinese-class-12561",
+  storageBucket: "chinese-class-12561.firebasestorage.app",
+  messagingSenderId: "767545693381",
+  appId: "1:767545693381:web:4e4b0eed26e5fbda054cac",
+  measurementId: "G-SRSMVT5SE0"
+};
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let currentClassStudents = [];
+
+    // --- 頁籤切換邏輯 ---
+    const tab1Btn = document.getElementById('tab1Btn');
+    const tab2Btn = document.getElementById('tab2Btn');
+    const section1 = document.getElementById('section1');
+    const section2 = document.getElementById('section2');
+
+    tab1Btn.addEventListener('click', () => {
+        tab1Btn.className = 'tab-btn active';
+        tab2Btn.className = 'tab-btn';
+        section1.style.display = 'block';
+        section2.style.display = 'none';
+    });
+
+    tab2Btn.addEventListener('click', () => {
+        tab2Btn.className = 'tab-btn active';
+        tab1Btn.className = 'tab-btn';
+        section2.style.display = 'block';
+        section1.style.display = 'none';
+    });
+
+    // --- 功能一：載入並登記作業 ---
+    document.getElementById('loadStudentsBtn').addEventListener('click', async () => {
+        const className = document.getElementById('classInput').value.trim();
+        const hwName = document.getElementById('hwInput').value.trim();
+
+        if (!className || !hwName) {
+            alert("請輸入「班級」與「作業名稱」！");
+            return;
+        }
+
+        const tbody = document.getElementById('studentTableBody');
+        tbody.innerHTML = '<tr><td colspan="3">資料讀取中...</td></tr>';
+        document.getElementById('registerArea').style.display = 'block';
+        document.getElementById('registerTitle').innerText = `${className} 班 - ${hwName} 登記`;
+
+        // 撈取班級學生
+        const q = query(collection(db, "students"), where("class", "==", className));
+        const querySnapshot = await getDocs(q);
+
+        currentClassStudents = [];
+        querySnapshot.forEach((doc) => {
+            currentClassStudents.push({ id: doc.id, ...doc.data() });
+        });
+
+        currentClassStudents.sort((a, b) => a.seat - b.seat);
+
+        if (currentClassStudents.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" style="color:red;">找不到該班學生，請檢查班級名稱！</td></tr>';
+            return;
+        }
+
+        // 渲染表格並自動帶入歷史儲存紀錄
+        tbody.innerHTML = '';
+        for (let student of currentClassStudents) {
+            const recordId = `${className}_${student.seat}_${hwName}`;
+            const recordRef = doc(db, "records", recordId);
+            const recordSnap = await getDoc(recordRef);
+            
+            let status = 'submitted'; // 預設已交
+            if (recordSnap.exists()) {
+                status = recordSnap.data().status;
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${student.seat}</td>
+                <td><strong>${student.name}</strong></td>
+                <td class="status-options">
+                    <label><input type="radio" name="status_${student.id}" value="submitted" ${status === 'submitted' ? 'checked' : ''}> 已交</label>
+                    <label><input type="radio" name="status_${student.id}" value="incomplete" ${status === 'incomplete' ? 'checked' : ''}> <span style="color:#b06000;">有缺漏</span></label>
+                    <label><input type="radio" name="status_${student.id}" value="not_submitted" ${status === 'not_submitted' ? 'checked' : ''}> <span style="color:red;">未交</span></label>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        }
+    });
+
+    // 儲存登記紀錄
+    document.getElementById('saveRecordsBtn').addEventListener('click', async () => {
+        const className = document.getElementById('classInput').value.trim();
+        const hwName = document.getElementById('hwInput').value.trim();
+        const batch = writeBatch(db);
+
+        currentClassStudents.forEach(student => {
+            const status = document.querySelector(`input[name="status_${student.id}"]:checked`).value;
+            const recordId = `${className}_${student.seat}_${hwName}`;
+            const recordRef = doc(db, "records", recordId);
+
+            batch.set(recordRef, {
+                class: className,
+                seat: student.seat,
+                name: student.name,
+                hwName: hwName,
+                status: status, // submitted, incomplete, not_submitted
+                updatedAt: new Date()
+            });
+        });
+
+        await batch.commit();
+        alert(`🎉 ${hwName} 登記紀錄已成功儲存！`);
+    });
+
+    // --- 功能二：查詢未完成名單總覽 ---
+    document.getElementById('querySummaryBtn').addEventListener('click', async () => {
+        const className = document.getElementById('summaryClassInput').value.trim();
+
+        if (!className) {
+            alert("請輸入班級！");
+            return;
+        }
+
+        const tbody = document.getElementById('summaryTableBody');
+        tbody.innerHTML = '<tr><td colspan="4">正在彙整所有作業紀錄...</td></tr>';
+        document.getElementById('summaryResultArea').style.display = 'block';
+        document.getElementById('summaryTitle').innerText = `${className} 班 - 未完成作業項目總覽`;
+
+        // 1. 抓取該班所有學生
+        const qStudents = query(collection(db, "students"), where("class", "==", className));
+        const studentsSnap = await getDocs(qStudents);
+        
+        let studentsMap = {};
+        studentsSnap.forEach(doc => {
+            const data = doc.data();
+            studentsMap[data.seat] = {
+                name: data.name,
+                seat: data.seat,
+                missingItems: []
+            };
+        });
+
+        if (Object.keys(studentsMap).length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="color:red;">找不到該班學生資料！</td></tr>';
+            return;
+        }
+
+        // 2. 抓取該班所有作業紀錄
+        const qRecords = query(collection(db, "records"), where("class", "==", className));
+        const recordsSnap = await getDocs(qRecords);
+
+        recordsSnap.forEach(doc => {
+            const record = doc.data();
+            // 篩選出「未交」或「缺漏」
+            if (record.status !== 'submitted' && studentsMap[record.seat]) {
+                studentsMap[record.seat].missingItems.push({
+                    hwName: record.hwName,
+                    status: record.status
+                });
+            }
+        });
+
+        // 3. 渲染到畫面上
+        tbody.innerHTML = '';
+        const sortedSeats = Object.keys(studentsMap).sort((a, b) => Number(a) - Number(b));
+        
+        let hasAnyMissing = false;
+
+        sortedSeats.forEach(seat => {
+            const student = studentsMap[seat];
+            
+            // 只有有缺漏或未交的學生才顯示出來
+            if (student.missingItems.length > 0) {
+                hasAnyMissing = true;
+                const tr = document.createElement('tr');
+                
+                // 整理該名學生未完成的項目標籤
+                let itemsHtml = student.missingItems.map(item => {
+                    if (item.status === 'not_submitted') {
+                        return `<span class="badge badge-red">${item.hwName} (未交)</span>`;
+                    } else {
+                        return `<span class="badge badge-yellow">${item.hwName} (有缺漏)</span>`;
+                    }
+                }).join(' ');
+
+                tr.innerHTML = `
+                    <td>${student.seat}</td>
+                    <td><strong>${student.name}</strong></td>
+                    <td style="text-align: left;">${itemsHtml}</td>
+                    <td><strong style="color:red;">缺 ${student.missingItems.length} 項</strong></td>
+                `;
+                tbody.appendChild(tr);
+            }
+        });
+
+        if (!hasAnyMissing) {
+            tbody.innerHTML = '<tr><td colspan="4" style="color:green; font-weight:bold; padding:20px;">🎉 太棒了！該班目前沒有任何未完成或缺漏的作業！</td></tr>';
+        }
+    });
+</script>
+
+</body>
+</html>
