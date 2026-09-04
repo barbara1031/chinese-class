@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>學生資料匯入系統</title>
+    <!-- 引入 SheetJS 用來讀取 Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
+        .container { max-width: 600px; margin: 0 auto; background: #f9f9f9; padding: 20px; border-radius: 8px; }
+        button { padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #45a049; }
+        #status { margin-top: 15px; color: blue; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📝 匯入學生 Excel 資料</h2>
+    <p>請確保 Excel 標題列包含：<strong>班級</strong>、<strong>座號</strong>、<strong>姓名</strong></p>
+    
+    <input type="file" id="excelFile" accept=".xlsx, .xls">
+    <br>
+    <button id="uploadBtn">讀取並匯入 Firebase</button>
+    <div id="status"></div>
+</div>
+
+<!-- 引入 Firebase 模組 -->
+<script type="module">
+    // 1. 載入 Firebase 核心與 Firestore 功能
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, doc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // 🔴🔴🔴 請將下方的 firebaseConfig 替換成您自己的！ 🔴🔴🔴
+    const firebaseConfig = {
+        apiKey: "AIzaSy您的APIKEY...",
+        authDomain: "您的專案.firebaseapp.com",
+        projectId: "您的專案ID",
+        storageBucket: "您的專案.appspot.com",
+        messagingSenderId: "123456789",
+        appId: "1:123456789:web:abcdefg"
+    };
+
+    // 初始化 Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 2. 監聽按鈕點擊事件
+    document.getElementById('uploadBtn').addEventListener('click', () => {
+        const fileInput = document.getElementById('excelFile');
+        const statusDiv = document.getElementById('status');
+
+        if (fileInput.files.length === 0) {
+            alert("請先選擇 Excel 檔案！");
+            return;
+        }
+
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+
+        statusDiv.innerText = "讀取 Excel 中...";
+
+        reader.onload = async function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                
+                // 抓取第一個工作表
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                
+                // 將 Excel 轉換為 JSON 陣列
+                const json = XLSX.utils.sheet_to_json(worksheet);
+                console.log("讀取到的資料:", json);
+
+                await uploadToFirebase(json, statusDiv);
+            } catch (error) {
+                console.error(error);
+                statusDiv.innerText = "讀取失敗，請檢查檔案格式！";
+            }
+        };
+
+        reader.readAsArrayBuffer(file);
+    });
+
+    // 3. 批次上傳至 Firebase 函數
+    async function uploadToFirebase(students, statusDiv) {
+        statusDiv.innerText = "開始上傳至 Firebase，請稍候...";
+        
+        try {
+            const batch = writeBatch(db); // 使用批次寫入提升速度
+
+            students.forEach((student) => {
+                // 確保欄位名稱與您的 Excel 表頭一致 (班級, 座號, 姓名)
+                const className = String(student["班級"] || "").trim();
+                const seatNumber = String(student["座號"] || "").trim();
+                const name = String(student["姓名"] || "").trim();
+
+                if(className && seatNumber && name) {
+                    // 自動補零，例如 1 號變成 01
+                    const formattedSeat = seatNumber.padStart(2, '0');
+                    // 組合出專屬 ID，例如 701_01
+                    const studentId = `${className}_${formattedSeat}`;
+
+                    const docRef = doc(db, "students", studentId);
+                    batch.set(docRef, {
+                        class: className,
+                        seat: Number(seatNumber),
+                        name: name
+                    });
+                }
+            });
+
+            await batch.commit(); // 執行寫入
+            statusDiv.innerText = "🎉 匯入成功！您可以去 Firebase 後台查看資料了。";
+            statusDiv.style.color = "green";
+
+        } catch (error) {
+            console.error("上傳失敗:", error);
+            statusDiv.innerText = "❌ 上傳失敗，請打開 F12 查看錯誤訊息。";
+            statusDiv.style.color = "red";
+        }
+    }
+</script>
+
+</body>
+</html>
